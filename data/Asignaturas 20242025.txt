@@ -1,0 +1,41 @@
+Asignaturas 2024/2025|
+----------------------
+
+1º CUATRIMESTRE|
+----------------
+- Desarrollo de interfaces de usuario
+- Ingeniería de requisitos
+- Modelado y diseño de software 1
+- Teoría de Códigos y Criptografía
+- Integración de las Tecnologías de la Información en las Organizaciones
+- Procesos de Ingeniería del Software 1
+	
+2º CUATRIMESTRE|
+----------------
+- Modelado y Diseño de Software 2
+- Desarrollo Rápido de Aplicaciones
+- Procesos de la Ingeniería del Software 2 (TENDRÍA QUE HABLAR CON EL PROFESOR)
+
+
+
+
+
+
+ASIGNATURAS PENDIENTES|
+-----------------------
+
+1º CUATRIMESTRE|
+----------------
+- Cálculo
+- Física
+- Arquitectura de Computadores
+- Sistemas Operativos
+- Sistemas Inteligentes
+- Ingeniería del Software
+- Estructura de Datos y Algoritmos 1º
+- Línea de Productos Software
+
+2º CUATRIMESTRE|
+----------------
+- TFG
+- PRÁCTICAS EN EMPRESA

