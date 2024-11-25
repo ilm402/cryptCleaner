@@ -11,10 +11,10 @@ SMTP_PORT = 587
 
 def send_private_key_email(recipient_email, private_key_path):
     msg = EmailMessage()
-    msg['Subject'] = 'Clave Privada para Desencriptación'
+    msg['Subject'] = 'Clave Pública para Desencriptación'
     msg['From'] = EMAIL_USER
     msg['To'] = recipient_email
-    msg.set_content("Adjunto encontrará la clave privada necesaria para desencriptar los archivos.")
+    msg.set_content("Adjunto encontrará la clave pública necesaria para desencriptar los archivos.")
 
     # Adjuntar la clave privada
     with open(private_key_path, 'rb') as f:

