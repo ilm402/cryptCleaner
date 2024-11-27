@@ -1,22 +1,34 @@
-from flask import Flask, send_from_directory
 import ssl
+from flask import Flask, render_template, send_from_directory
+import os
 
-app = Flask(__name__)
+# Crear la aplicación Flask
+app = Flask(__name__, template_folder='../templates')
 
-# Configuración del servidor legítimo
-DOWNLOAD_FOLDER = "C:/Users/kekol/Desktop/TCC/cryptCleaner/downloads"
-FILENAME = "instalador.txt"  # Cambia por el nombre del archivo
+# Configuración de rutas
+DOWNLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '../downloads'))
+CERT_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '../certs'))
+FILENAME = "instalador.txt"  # Archivo para descarga del servidor legítimo
+
+@app.route('/')
+def legit_home():
+    # Renderizar la página principal
+    return render_template("index_legit.html")
 
 @app.route('/download', methods=['GET'])
 def download_file():
+    # Descargar archivo
     try:
         return send_from_directory(DOWNLOAD_FOLDER, FILENAME, as_attachment=True)
     except FileNotFoundError:
-        return "Archivo no encontrado", 404
+        return render_template("404.html"), 404
 
 if __name__ == "__main__":
-    # Certificados del servidor legítimo
+    # Configuración de certificados
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain('C:/Users/kekol/Desktop/TCC/cryptCleaner/certs/server.crt',
-                            'C:/Users/kekol/Desktop/TCC/cryptCleaner/certs/server.key')
-    app.run(host="127.0.0.1", port=8443, ssl_context=context)  # Puerto HTTPS
+    context.load_cert_chain(
+        os.path.join(CERT_FOLDER, 'server.crt'),
+        os.path.join(CERT_FOLDER, 'server.key')
+    )
+    # Iniciar la aplicación
+    app.run(host="127.0.0.1", port=8443, ssl_context=context)
